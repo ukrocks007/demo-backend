@@ -13,7 +13,7 @@ const users = [
     }
 ];
 
-const todos = [{
+let todos = [{
     user: 1,
     id: 1,
     name: "Shopping",
@@ -23,10 +23,10 @@ const todos = [{
         data: "Foil Paper", isDone: true
     }, {
         data: "Brown Bread", isDone: false
-    }]   
+    }]
 }, {
     user: 2,
-    id: 2, 
+    id: 2,
     name: "Demo",
     list: [{
         data: "Item1", isDone: false
@@ -34,7 +34,7 @@ const todos = [{
         data: "Item2", isDone: true
     }, {
         data: "Item3", isDone: false
-    }]   
+    }]
 }, {
     user: 3,
     id: 3,
@@ -45,7 +45,7 @@ const todos = [{
         data: "TDS", isDone: true
     }, {
         data: "PF Compliance", isDone: false
-    }]   
+    }]
 }];
 
 const {
@@ -82,7 +82,7 @@ passport.serializeUser(function (user, done) {
 
 passport.deserializeUser(async function (email, done) {
     let user = users.filter(a => a.email === email);
-    if(user.length > 0) {
+    if (user.length > 0) {
         return done(user[0]);
     } else {
         done();
@@ -92,13 +92,13 @@ passport.deserializeUser(async function (email, done) {
 passport.use('jwt', new Strategy(jwtOptions, async (req, jwt_payload, done) => {
     try {
         let user = users.filter(a => a.email === jwt_payload.id)
-        
-                if (user.length > 0) {
-                    req.user = user[0];
-                    return done(null, user[0])
-                } else {
-                    return done(null, false)
-                }
+
+        if (user.length > 0) {
+            req.user = user[0];
+            return done(null, user[0])
+        } else {
+            return done(null, false)
+        }
     } catch (ex) {
         console.log('[PASSPORT AUTH]', ex);
         return done(null, false);
@@ -110,9 +110,23 @@ app.get("/api/todo", passport.authenticate("jwt"), (req, res) => {
     res.status(200).json(todo);
 });
 
+app.delete("/api/todo", passport.authenticate("jwt"), (req, res) => {
+    let todo = todos.filter(a => a.id != req.query.id);
+    todos = todo;
+    res.status(200).json({ success: true });
+});
+
+app.put('/api/todo', passport.authenticate("jwt"), (req, res) => {
+    let todo = todos.filter(a => a.id == req.body.id);
+    let others = todos.filter(a => a.id != req.body.id);
+    todo = req.body;
+    todos = [...others, todo];
+    res.status(200).json({ success: true });
+});
+
 app.post("/api/todo", passport.authenticate("jwt"), (req, res) => {
     let todo = req.body;
-    if(todo.user && todo.name && todo.list) {
+    if (todo.user && todo.name && todo.list) {
         todo["id"] = todos.length + 1;
         todos.push(todo);
         res.status(200).json(todo);
@@ -126,7 +140,7 @@ app.post("/api/todo", passport.authenticate("jwt"), (req, res) => {
 
 app.put("/api/todo", passport.authenticate("jwt"), (req, res) => {
     let todo = req.body;
-    if(todo.user && todo.name && todo.list && todo.id) {
+    if (todo.user && todo.name && todo.list && todo.id) {
         todos[todo.id - 1] = todo;
         res.status(200).json(todo);
     }
@@ -140,20 +154,20 @@ app.put("/api/todo", passport.authenticate("jwt"), (req, res) => {
 app.post("/api/user/login", async (req, res) => {
     let user = users.filter(e => e.email === req.body.email && e.password == req.body.password);
     user = user.length > 0 ? user[0] : undefined;
-    if(user){
-    const token = jwt.sign(
-        {
-            id: user.email,
-            firstName: user.name,
-        },
-        "dwfsdacvreve"
-    );
-    return res.status(200).json({
-        message: "OK",
-        token: token,
-        user: user,
-    });
-    }else {
+    if (user) {
+        const token = jwt.sign(
+            {
+                id: user.email,
+                firstName: user.name,
+            },
+            "dwfsdacvreve"
+        );
+        return res.status(200).json({
+            message: "OK",
+            token: token,
+            user: user,
+        });
+    } else {
         return res.status(404).json({
             message: "User not found!",
         });
